@@ -31,7 +31,7 @@ function ARScene() {
       const loader = new GLTFLoader();
       let model = null;
 
-      loader.load('/path/to/your-model.glb', (gltf) => {
+      loader.load('/models/burger.glb', (gltf) => {
         model = gltf.scene;
         model.scale.set(0.1, 0.1, 0.1); // Adjust scale as needed
         model.visible = false; // Initially hidden until placed
