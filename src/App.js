@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { ARButton } from 'three/examples/jsm/webxr/ARButton';
 
-function ARScene() {
+function ARModelViewer({ modelPath, modelScale = [0.1, 0.1, 0.1] }) {
   const ref = useRef();
   const [isARSessionStarted, setARSessionStarted] = useState(false);
   const [hasSurface, setHasSurface] = useState(false);
@@ -32,9 +32,9 @@ function ARScene() {
     let model = null;
     let isModelPlaced = false; // Track if model has been placed
 
-    loader.load('/models/ice.glb', (gltf) => {
+    loader.load(modelPath, (gltf) => {
       model = gltf.scene;
-      model.scale.set(0.1, 0.1, 0.1); // Adjust model size if needed
+      model.scale.set(...modelScale); // Adjust model size based on props
       model.visible = false; // Initially hide the model
       scene.add(model);
     }, undefined, (error) => {
@@ -115,7 +115,7 @@ function ARScene() {
       }
       renderer.dispose();
     };
-  }, []);
+  }, [modelPath, modelScale]);
 
   return (
     <div>
@@ -169,7 +169,11 @@ const styles = {
 function App() {
   return (
     <div>
-      <ARScene />
+      {/* Example Usage of ARModelViewer Component */}
+      <ARModelViewer modelPath="/models/ice.glb" modelScale={[0.1, 0.1, 0.1]} />
+      {/* To use with a different model */}
+      <ARModelViewer modelPath="/models/burger.glb" modelScale={[0.1, 0.1, 0.1]} />
+      {/* <ARModelViewer modelPath="/models/car.glb" modelScale={[0.2, 0.2, 0.2]} /> */}
     </div>
   );
 }
