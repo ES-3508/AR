@@ -6,7 +6,7 @@ import { ARButton } from 'three/examples/jsm/webxr/ARButton';
 function ARScene() {
   const ref = useRef();
   const [isARSessionStarted, setARSessionStarted] = useState(false);
-  const [hasSurface, setHasSurface] = useState(false); // Track surface detection
+  const [hasSurface, setHasSurface] = useState(false);
 
   useEffect(() => {
     // Initialize Three.js renderer
@@ -30,6 +30,7 @@ function ARScene() {
     // Load model using GLTFLoader
     const loader = new GLTFLoader();
     let model = null;
+    let isModelPlaced = false; // Track if model has been placed
 
     loader.load('/models/ice.glb', (gltf) => {
       model = gltf.scene;
@@ -42,7 +43,6 @@ function ARScene() {
 
     // Variables for hit-testing
     let hitTestSource = null;
-    let hitTestAnchor = null;
 
     // Add a reticle for visual feedback
     const reticle = new THREE.Mesh(
@@ -73,6 +73,13 @@ function ARScene() {
             pose.transform.orientation.z,
             pose.transform.orientation.w
           );
+
+          // Move model along with the reticle until it's placed
+          if (!isModelPlaced && model) {
+            model.visible = true;
+            model.position.copy(reticle.position);
+            model.quaternion.copy(reticle.quaternion);
+          }
         } else {
           reticle.visible = false; // Hide reticle when no surface is detected
           setHasSurface(false);
@@ -89,11 +96,11 @@ function ARScene() {
       const viewerSpace = await session.requestReferenceSpace('viewer');
       hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
 
-      // On user tap, confirm model placement
+      // On user tap, place the model at reticle position and stop moving it
       session.addEventListener('select', () => {
         if (model && reticle.visible) {
-          // Place model at reticle position
-          model.visible = true;
+          // Confirm model placement
+          isModelPlaced = true;
           model.position.copy(reticle.position);
           model.quaternion.copy(reticle.quaternion);
           console.log('Model placed on surface'); // Debug message
