@@ -6,6 +6,7 @@ import { ARButton } from 'three/examples/jsm/webxr/ARButton';
 function ARScene() {
   const ref = useRef();
   const [isARSessionStarted, setARSessionStarted] = useState(false);
+  const [hasSurface, setHasSurface] = useState(false); // Track surface detection
 
   useEffect(() => {
     // Initialize Three.js renderer
@@ -41,6 +42,15 @@ function ARScene() {
 
     // Variables for hit-testing
     let hitTestSource = null;
+    let hitTestAnchor = null;
+
+    // Add a reticle for visual feedback
+    const reticle = new THREE.Mesh(
+      new THREE.RingGeometry(0.05, 0.06, 32).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+    );
+    reticle.visible = false;
+    scene.add(reticle);
 
     // Renderer loop to render the scene
     renderer.setAnimationLoop((timestamp, frame) => {
@@ -53,17 +63,19 @@ function ARScene() {
           const referenceSpace = renderer.xr.getReferenceSpace();
           const pose = hit.getPose(referenceSpace);
 
-          // If model is loaded, position it on the detected surface
-          if (model) {
-            model.visible = true; // Make model visible when a surface is detected
-            model.position.set(pose.transform.position.x, pose.transform.position.y, pose.transform.position.z);
-            model.quaternion.set(
-              pose.transform.orientation.x,
-              pose.transform.orientation.y,
-              pose.transform.orientation.z,
-              pose.transform.orientation.w
-            );
-          }
+          // Place reticle on the detected surface
+          reticle.visible = true;
+          setHasSurface(true);
+          reticle.position.set(pose.transform.position.x, pose.transform.position.y, pose.transform.position.z);
+          reticle.quaternion.set(
+            pose.transform.orientation.x,
+            pose.transform.orientation.y,
+            pose.transform.orientation.z,
+            pose.transform.orientation.w
+          );
+        } else {
+          reticle.visible = false; // Hide reticle when no surface is detected
+          setHasSurface(false);
         }
       }
 
@@ -79,9 +91,12 @@ function ARScene() {
 
       // On user tap, confirm model placement
       session.addEventListener('select', () => {
-        if (model) {
+        if (model && reticle.visible) {
+          // Place model at reticle position
+          model.visible = true;
+          model.position.copy(reticle.position);
+          model.quaternion.copy(reticle.quaternion);
           console.log('Model placed on surface'); // Debug message
-          model.visible = true; // Make the model visible
         }
       });
     });
@@ -108,6 +123,12 @@ function ARScene() {
           <p style={{ fontSize: '0.8em', color: '#999' }}>Tap 'Start AR' to begin</p>
         </div>
       )}
+      {/* Surface Detection Indicator */}
+      {isARSessionStarted && !hasSurface && (
+        <div style={styles.surfaceWarning}>
+          <p>Looking for a flat surface...</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -123,6 +144,17 @@ const styles = {
     padding: '20px',
     borderRadius: '10px',
     textAlign: 'center',
+    zIndex: 10,
+  },
+  surfaceWarning: {
+    position: 'absolute',
+    top: '10%',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    color: '#fff',
+    padding: '10px',
+    borderRadius: '5px',
     zIndex: 10,
   },
 };
